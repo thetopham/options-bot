@@ -40,7 +40,8 @@ The product is **paper-trading first**. Live trading is not implemented as a def
 
 - `options-bot scan --symbol SPY`
 - `options-bot backtest --symbol SPY`
-- `options-bot paper-trade --symbol SPY --strategy auto`
+- `options-bot paper-trade --symbol SPY --strategy auto --dry-run`
+- `options-bot paper-trade --symbol SPY --strategy put_call_overlay --dry-run`
 - `options-bot train-ai`
 
 ### Strategies
@@ -79,6 +80,25 @@ Exit plan:
 - IV crush warning.
 - Time decay threshold.
 - Trend failure.
+
+### Cash-Secured Put + OTM Call Overlay
+
+Use when the operator wants a paper/research-only bullish risk-reversal-style overlay: sell a cash-secured OTM put to provide downside liquidity to institutional-style counterparties, then use part of the credit to buy an OTM call for upside convexity.
+
+Candidate construction:
+
+- Sell one OTM put, explicitly marked cash-secured.
+- Buy one OTM call above the underlying price.
+- Net credit is put credit minus call debit.
+- Max loss is bounded by cash reserved for assignment minus net credit.
+- Upside max profit is open-ended from the long call, but no profitability is claimed.
+- Reject if the short put is not cash-secured.
+
+Exit plan:
+
+- Exit or roll short put if assignment risk, trend break, or max-loss threshold is reached.
+- Take profits or trail the OTM call on upside expansion.
+- Close before expiration unless paper assignment is explicitly approved.
 
 ### AI Regime Selector
 

@@ -8,6 +8,7 @@ from options_bot.backtest.engine import BacktestEngine
 from options_bot.execution.order_builder import build_multi_leg_order_intent
 from options_bot.risk.checks import RiskLimits, evaluate_candidate
 from options_bot.strategies.iron_condor import build_iron_condor
+from options_bot.strategies.institutional_put_call_overlay import build_institutional_put_call_overlay
 from options_bot.strategies.long_strangle import build_long_strangle
 from options_bot.strategies.regime_selector import RegimeFeatures, select_regime
 
@@ -29,21 +30,34 @@ def backtest(symbol: str = typer.Option(..., "--symbol")):
 
 @app.command("paper-trade")
 def paper_trade(symbol: str = typer.Option(..., "--symbol"), strategy: str = typer.Option("auto", "--strategy"), dry_run: bool = True):
-    candidate = build_iron_condor(
-        symbol=symbol,
-        expiration="2099-01-21",
-        short_put_strike=480,
-        long_put_strike=475,
-        short_call_strike=520,
-        long_call_strike=525,
-        credit=1.25,
-    ) if strategy in {"auto", "condor", "iron_condor"} else build_long_strangle(
-        symbol=symbol,
-        expiration="2099-01-21",
-        put_strike=480,
-        call_strike=520,
-        debit=3.40,
-    )
+    if strategy in {"auto", "condor", "iron_condor"}:
+        candidate = build_iron_condor(
+            symbol=symbol,
+            expiration="2099-01-21",
+            short_put_strike=480,
+            long_put_strike=475,
+            short_call_strike=520,
+            long_call_strike=525,
+            credit=1.25,
+        )
+    elif strategy in {"put_call_overlay", "institutional_put_call_overlay", "sell_put_buy_call"}:
+        candidate = build_institutional_put_call_overlay(
+            symbol=symbol,
+            expiration="2099-01-21",
+            underlying_price=500.0,
+            short_put_strike=470.0,
+            long_call_strike=530.0,
+            put_credit=6.20,
+            call_debit=1.40,
+        )
+    else:
+        candidate = build_long_strangle(
+            symbol=symbol,
+            expiration="2099-01-21",
+            put_strike=480,
+            call_strike=520,
+            debit=3.40,
+        )
     decision = evaluate_candidate(candidate, RiskLimits(account_equity=100_000))
     intent = build_multi_leg_order_intent(candidate, decision, submit=not dry_run) if decision.allowed else None
     console.print({"candidate": candidate, "risk": decision, "order_intent": intent, "dry_run": dry_run})

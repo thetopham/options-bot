@@ -22,6 +22,7 @@ class OptionLeg:
     open_interest: int | None = None
     volume: int | None = None
     delta: float | None = None
+    cash_secured: bool = False
 
 
 @dataclass

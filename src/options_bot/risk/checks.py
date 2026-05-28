@@ -15,6 +15,7 @@ class RiskLimits:
     min_open_interest: int = 100
     min_volume: int = 10
     kill_switch_active: bool = False
+    require_cash_secured_puts: bool = True
 
 
 @dataclass
@@ -37,6 +38,7 @@ def evaluate_candidate(candidate: StrategyCandidate, limits: RiskLimits) -> Risk
         max_allowed = limits.account_equity * limits.max_risk_fraction
         if candidate.max_loss > max_allowed:
             reasons.append(f"Max risk {candidate.max_loss:.2f} exceeds limit {max_allowed:.2f}")
+    reasons.extend(_cash_secured_put_rejections(candidate, limits))
     reasons.extend(_protective_leg_rejections(candidate))
     for leg in candidate.legs:
         if leg.bid is not None and leg.ask is not None and leg.ask > 0:
@@ -50,9 +52,21 @@ def evaluate_candidate(candidate: StrategyCandidate, limits: RiskLimits) -> Risk
     return RiskDecision(allowed=not reasons, reasons=reasons, warnings=warnings)
 
 
+def _cash_secured_put_rejections(candidate: StrategyCandidate, limits: RiskLimits) -> list[str]:
+    if not limits.require_cash_secured_puts:
+        return []
+    reasons: list[str] = []
+    for leg in candidate.legs:
+        if leg.side == "sell" and leg.option_type == "put" and not leg.cash_secured:
+            reasons.append(f"Short put {leg.strike} must be cash-secured; naked short puts are rejected")
+    return reasons
+
+
 def _protective_leg_rejections(candidate: StrategyCandidate) -> list[str]:
     reasons: list[str] = []
     for short in [leg for leg in candidate.legs if leg.side == "sell"]:
+        if short.option_type == "put" and short.cash_secured:
+            continue
         if not _has_protective_long(short, candidate.legs):
             reasons.append(f"Short {short.option_type} {short.strike} has no protective long leg")
     return reasons
