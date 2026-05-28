@@ -29,6 +29,7 @@ options-bot scan --symbol SPY
 options-bot backtest --symbol SPY
 options-bot paper-trade --symbol SPY --strategy auto --dry-run
 options-bot paper-trade --symbol SPY --strategy put_call_overlay --dry-run
+options-bot train-regimes --data-path data/btc_15m.csv --symbol BTCUSD --timeframe 15m --output-db data/regimes.sqlite3
 options-bot train-ai
 ```
 
@@ -37,6 +38,7 @@ options-bot train-ai
 - Condor = sell expensive fear when range is likely.
 - Strangle = buy cheap vol when a big move is likely.
 - Put/call overlay = sell cash-secured downside liquidity, use premium for OTM upside convexity.
+- Markov/HMM regimes = regime brain for chop/trend/high-vol filters.
 - AI = regime filter, not a magic predictor.
 
 No profitability is claimed.

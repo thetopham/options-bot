@@ -5,6 +5,7 @@ from rich.console import Console
 
 from options_bot.ai.train import train_walk_forward
 from options_bot.backtest.engine import BacktestEngine
+from options_bot.regime.train_regimes import train_regime_model
 from options_bot.execution.order_builder import build_multi_leg_order_intent
 from options_bot.risk.checks import RiskLimits, evaluate_candidate
 from options_bot.strategies.iron_condor import build_iron_condor
@@ -61,6 +62,25 @@ def paper_trade(symbol: str = typer.Option(..., "--symbol"), strategy: str = typ
     decision = evaluate_candidate(candidate, RiskLimits(account_equity=100_000))
     intent = build_multi_leg_order_intent(candidate, decision, submit=not dry_run) if decision.allowed else None
     console.print({"candidate": candidate, "risk": decision, "order_intent": intent, "dry_run": dry_run})
+
+
+@app.command("train-regimes")
+def train_regimes(
+    data_path: str = typer.Option(..., "--data-path", help="CSV or SQLite candle data path"),
+    symbol: str = typer.Option("BTCUSD", "--symbol"),
+    timeframe: str = typer.Option("15m", "--timeframe"),
+    table: str = typer.Option("candles", "--table", help="SQLite table name when data path is a DB"),
+    output_db: str | None = typer.Option(None, "--output-db", help="SQLite DB that receives regime_labels"),
+):
+    console.print(
+        train_regime_model(
+            data_path=data_path,
+            symbol=symbol,
+            timeframe=timeframe,
+            table=table,
+            output_db=output_db,
+        )
+    )
 
 
 @app.command("train-ai")
