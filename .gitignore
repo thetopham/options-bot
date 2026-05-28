@@ -1,0 +1,15 @@
+.env
+*.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+data/
+*.duckdb
+*.sqlite
+*.sqlite3
+.kill_switch
